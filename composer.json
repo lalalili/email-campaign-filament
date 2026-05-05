@@ -1,16 +1,16 @@
 {
     "name": "lalalili/email-campaign-filament",
-    "description": "Filament v4 admin UI layer for the email-campaign package.",
+    "description": "Filament admin UI layer for the email-campaign package.",
     "type": "library",
     "license": "MIT",
     "require": {
         "php": "^8.2",
         "lalalili/email-campaign": "@dev",
-        "filament/filament": "^4.0",
-        "filament/forms": "^4.0",
-        "filament/schemas": "^4.0",
-        "filament/tables": "^4.0",
-        "filament/actions": "^4.0",
+        "filament/filament": "^4.0|^5.0",
+        "filament/forms": "^4.0|^5.0",
+        "filament/schemas": "^4.0|^5.0",
+        "filament/tables": "^4.0|^5.0",
+        "filament/actions": "^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
