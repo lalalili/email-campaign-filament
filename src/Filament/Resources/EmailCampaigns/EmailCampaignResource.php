@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Lalalili\EmailCampaign\Actions\SendCampaignAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
@@ -69,6 +70,23 @@ class EmailCampaignResource extends Resource
                 ->placeholder('（使用系統預設）')
                 ->nullable(),
 
+            Select::make('audience_list_id')
+                ->label('活動名單')
+                ->options(fn (): array => self::audienceListOptions())
+                ->placeholder('（手動管理收件人）')
+                ->searchable()
+                ->nullable()
+                ->live()
+                ->helperText('選擇名單後，排程時會固定收件人快照。'),
+
+            Select::make('audience_email_column')
+                ->label('Email 欄位')
+                ->options(fn ($get): array => self::audienceColumnOptions($get('audience_list_id')))
+                ->searchable()
+                ->nullable()
+                ->required(fn ($get): bool => filled($get('audience_list_id')))
+                ->helperText('系統會依此欄位取得每筆名單資料的收件 Email。'),
+
             Select::make('status')
                 ->label('狀態')
                 ->options(collect(EmailCampaignStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()]))
@@ -84,12 +102,13 @@ class EmailCampaignResource extends Resource
                 ->label('主旨模板')
                 ->required()
                 ->maxLength(500)
-                ->helperText('支援 {{ user_name }}、{{ campaign_name }}、{{ email }} 等變數')
+                ->helperText('支援 {{ name }}、{{ user_name }}、{{ campaign_name }}、{{ email }} 及名單欄位變數。')
                 ->columnSpanFull(),
 
             RichEditor::make('html_template')
-                ->label('HTML 內容模板')
+                ->label('EDM 內容')
                 ->nullable()
+                ->helperText('可使用個性化變數，例如：親愛的 {{ name }} 會員。')
                 ->columnSpanFull(),
 
             Textarea::make('text_template')
@@ -130,6 +149,11 @@ class EmailCampaignResource extends Resource
                 TextColumn::make('recipients_count')
                     ->counts('recipients')
                     ->label('收件人數'),
+
+                TextColumn::make('audience_skipped_count')
+                    ->label('略過筆數')
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('deliveries_count')
                     ->counts('deliveries')
@@ -196,5 +220,44 @@ class EmailCampaignResource extends Resource
             'edit'   => EditEmailCampaign::route('/{record}/edit'),
             'view'   => ViewEmailCampaign::route('/{record}'),
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function audienceListOptions(): array
+    {
+        if (! DB::getSchemaBuilder()->hasTable('audience_lists')) {
+            return [];
+        }
+
+        return DB::table('audience_lists')
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function audienceColumnOptions(mixed $audienceListId): array
+    {
+        if (! $audienceListId || ! DB::getSchemaBuilder()->hasTable('audience_lists')) {
+            return [];
+        }
+
+        $columns = DB::table('audience_lists')
+            ->where('id', $audienceListId)
+            ->value('columns_json');
+
+        $decoded = is_string($columns) ? json_decode($columns, true) : $columns;
+
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        return collect($decoded)
+            ->mapWithKeys(fn (string $column): array => [$column => $column])
+            ->all();
     }
 }

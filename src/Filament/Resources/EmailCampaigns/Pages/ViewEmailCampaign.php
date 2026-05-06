@@ -8,6 +8,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Lalalili\EmailCampaign\Actions\SendCampaignAction;
+use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\EmailCampaignResource;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\DeliveriesRelationManager;
@@ -47,6 +48,8 @@ class ViewEmailCampaign extends ViewRecord
                         'status'       => EmailCampaignStatus::Scheduled,
                         'scheduled_at' => $data['scheduled_at'],
                     ]);
+
+                    app(SyncAudienceListToCampaignRecipientsAction::class)->execute($this->record);
                 }),
         ];
     }
@@ -59,6 +62,8 @@ class ViewEmailCampaign extends ViewRecord
                 ->label('狀態')
                 ->formatStateUsing(fn ($state) => $state instanceof EmailCampaignStatus ? $state->label() : $state),
             TextEntry::make('subject_template')->label('主旨模板'),
+            TextEntry::make('audience_snapshot_at')->label('名單快照時間')->dateTime()->placeholder('—'),
+            TextEntry::make('audience_skipped_count')->label('名單略過筆數')->placeholder('0'),
             TextEntry::make('scheduled_at')->label('排程時間')->dateTime()->placeholder('—'),
             TextEntry::make('sent_at')->label('寄出時間')->dateTime()->placeholder('—'),
         ]);
