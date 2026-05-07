@@ -9,9 +9,9 @@ use Lalalili\EmailCampaignFilament\Filament\Resources\EmailSmtpProfiles\EmailSmt
 
 class EmailCampaignFilamentPlugin implements Plugin
 {
-    public static function make(): static
+    public static function make(): self
     {
-        return new static;
+        return new self;
     }
 
     public function getId(): string

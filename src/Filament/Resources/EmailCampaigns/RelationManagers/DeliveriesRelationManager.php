@@ -4,7 +4,6 @@ namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Relat
 
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Lalalili\EmailCampaign\Enums\EmailDeliveryStatus;
@@ -29,10 +28,10 @@ class DeliveriesRelationManager extends RelationManager
                     ->label('狀態')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        EmailDeliveryStatus::Sent    => 'success',
-                        EmailDeliveryStatus::Failed  => 'danger',
+                        EmailDeliveryStatus::Sent => 'success',
+                        EmailDeliveryStatus::Failed => 'danger',
                         EmailDeliveryStatus::Pending => 'warning',
-                        default                      => 'gray',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof EmailDeliveryStatus ? $state->label() : $state),
                 TextColumn::make('rendered_subject')->label('實際主旨')->placeholder('—')->toggleable(),

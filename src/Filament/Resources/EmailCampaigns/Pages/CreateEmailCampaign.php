@@ -6,8 +6,12 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
+use Lalalili\EmailCampaign\Models\EmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\EmailCampaignResource;
 
+/**
+ * @property EmailCampaign $record
+ */
 class CreateEmailCampaign extends CreateRecord
 {
     protected static string $resource = EmailCampaignResource::class;

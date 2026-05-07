@@ -6,8 +6,12 @@ use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
+use Lalalili\EmailCampaign\Models\EmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\EmailCampaignResource;
 
+/**
+ * @property EmailCampaign $record
+ */
 class EditEmailCampaign extends EditRecord
 {
     protected static string $resource = EmailCampaignResource::class;
