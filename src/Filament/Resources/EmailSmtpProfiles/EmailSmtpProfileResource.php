@@ -35,7 +35,12 @@ class EmailSmtpProfileResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '郵件行銷';
+        return config('email-campaign-filament.smtp_navigation_group', '全站管理');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('email-campaign-filament.smtp_navigation_sort', 90);
     }
 
     public static function form(Schema $schema): Schema

@@ -52,7 +52,12 @@ class EmailCampaignResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return '郵件行銷';
+        return config('email-campaign-filament.navigation_group', '郵件行銷');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('email-campaign-filament.navigation_sort', 10);
     }
 
     public static function form(Schema $schema): Schema

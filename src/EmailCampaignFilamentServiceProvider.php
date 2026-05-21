@@ -9,6 +9,8 @@ class EmailCampaignFilamentServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
-        $package->name('email-campaign-filament');
+        $package
+            ->name('email-campaign-filament')
+            ->hasConfigFile();
     }
 }
