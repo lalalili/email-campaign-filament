@@ -11,7 +11,7 @@ class EmailCampaignFilamentPlugin implements Plugin
 {
     public static function make(): self
     {
-        return new self;
+        return new self();
     }
 
     public function getId(): string
@@ -27,5 +27,7 @@ class EmailCampaignFilamentPlugin implements Plugin
         ]);
     }
 
-    public function boot(Panel $panel): void {}
+    public function boot(Panel $panel): void
+    {
+    }
 }

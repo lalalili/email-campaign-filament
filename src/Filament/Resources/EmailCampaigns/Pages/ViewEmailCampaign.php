@@ -100,7 +100,7 @@ class ViewEmailCampaign extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     $this->record->update([
-                        'status' => EmailCampaignStatus::Scheduled,
+                        'status'       => EmailCampaignStatus::Scheduled,
                         'scheduled_at' => $data['scheduled_at'],
                     ]);
 

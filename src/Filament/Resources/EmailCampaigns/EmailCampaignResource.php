@@ -22,6 +22,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Lalalili\AudienceCore\Models\AudienceList;
 use Lalalili\EmailCampaign\Actions\ResetStalledCampaignAction;
 use Lalalili\EmailCampaign\Actions\SendCampaignAction;
@@ -87,9 +88,10 @@ class EmailCampaignResource extends Resource
                 ->searchable()
                 ->nullable()
                 ->live()
-                ->afterStateUpdated(function (Set $set, mixed $state): void {
+                ->afterStateUpdated(function (Set $set, Get $get, mixed $state): void {
                     $set('audience_list_id', self::surveyAudienceListId($state));
-                    $set('audience_email_column', null);
+                    $set('audience_email_column', self::surveyAudienceEmailColumn($state));
+                    $set('extras_json', self::surveyPersonalizationMappings($state, $get('extras_json')));
                 })
                 ->helperText('選擇問卷後，主旨與 EDM 內容可使用 {{ survey_url }} 帶入每位收件人的問卷個性化網址。')
                 ->columnSpanFull(),
@@ -185,11 +187,11 @@ class EmailCampaignResource extends Resource
                     ->label('狀態')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        EmailCampaignStatus::Sent => 'success',
-                        EmailCampaignStatus::Sending => 'warning',
+                        EmailCampaignStatus::Sent      => 'success',
+                        EmailCampaignStatus::Sending   => 'warning',
                         EmailCampaignStatus::Scheduled => 'info',
-                        EmailCampaignStatus::Failed => 'danger',
-                        default => 'gray',
+                        EmailCampaignStatus::Failed    => 'danger',
+                        default                        => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof EmailCampaignStatus ? $state->label() : $state),
 
@@ -302,10 +304,10 @@ class EmailCampaignResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListEmailCampaigns::route('/'),
+            'index'  => ListEmailCampaigns::route('/'),
             'create' => CreateEmailCampaign::route('/create'),
-            'edit' => EditEmailCampaign::route('/{record}/edit'),
-            'view' => ViewEmailCampaign::route('/{record}'),
+            'edit'   => EditEmailCampaign::route('/{record}/edit'),
+            'view'   => ViewEmailCampaign::route('/{record}'),
         ];
     }
 
@@ -372,5 +374,56 @@ class EmailCampaignResource extends Resource
         $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
 
         return $survey?->settings()->audienceListId;
+    }
+
+    private static function surveyAudienceEmailColumn(mixed $surveyId): ?string
+    {
+        if (! $surveyId || ! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+            return null;
+        }
+
+        $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
+        $emailColumn = $survey?->settings()->emailColumn;
+
+        return filled($emailColumn) ? $emailColumn : null;
+    }
+
+    /**
+     * @return array<int, array{source: string, keyword: string}>|null
+     */
+    private static function surveyPersonalizationMappings(mixed $surveyId, mixed $currentMappings): ?array
+    {
+        $mappings = collect(is_array($currentMappings) ? $currentMappings : [])
+            ->filter(fn (mixed $mapping): bool => is_array($mapping))
+            ->map(fn (array $mapping): array => [
+                'source'  => trim((string) ($mapping['source'] ?? '')),
+                'keyword' => trim((string) ($mapping['keyword'] ?? '')),
+            ])
+            ->filter(fn (array $mapping): bool => $mapping['source'] !== '' && $mapping['keyword'] !== '' && $mapping['keyword'] !== 'user_name')
+            ->values()
+            ->all();
+
+        $nameColumn = self::surveyAudienceNameColumn($surveyId);
+
+        if (filled($nameColumn)) {
+            $mappings[] = [
+                'source'  => $nameColumn,
+                'keyword' => 'user_name',
+            ];
+        }
+
+        return $mappings === [] ? null : $mappings;
+    }
+
+    private static function surveyAudienceNameColumn(mixed $surveyId): ?string
+    {
+        if (! $surveyId || ! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+            return null;
+        }
+
+        $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
+        $nameColumn = $survey?->settings()->nameColumn;
+
+        return filled($nameColumn) ? $nameColumn : null;
     }
 }

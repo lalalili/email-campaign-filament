@@ -28,10 +28,10 @@ class DeliveriesRelationManager extends RelationManager
                     ->label('狀態')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        EmailDeliveryStatus::Sent => 'success',
-                        EmailDeliveryStatus::Failed => 'danger',
+                        EmailDeliveryStatus::Sent    => 'success',
+                        EmailDeliveryStatus::Failed  => 'danger',
                         EmailDeliveryStatus::Pending => 'warning',
-                        default => 'gray',
+                        default                      => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof EmailDeliveryStatus ? $state->label() : $state),
                 TextColumn::make('rendered_subject')->label('實際主旨')->placeholder('—')->toggleable(),

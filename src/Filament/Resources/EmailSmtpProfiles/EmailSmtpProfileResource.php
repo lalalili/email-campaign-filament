@@ -55,7 +55,7 @@ class EmailSmtpProfileResource extends Resource
                 ->label('驅動')
                 ->options([
                     'smtp' => 'SMTP',
-                    'log' => 'Log（測試用）',
+                    'log'  => 'Log（測試用）',
                 ])
                 ->required()
                 ->default('smtp')
@@ -125,9 +125,9 @@ class EmailSmtpProfileResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListEmailSmtpProfiles::route('/'),
+            'index'  => ListEmailSmtpProfiles::route('/'),
             'create' => CreateEmailSmtpProfile::route('/create'),
-            'edit' => EditEmailSmtpProfile::route('/{record}/edit'),
+            'edit'   => EditEmailSmtpProfile::route('/{record}/edit'),
         ];
     }
 }
