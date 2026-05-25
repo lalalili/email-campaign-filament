@@ -10,8 +10,8 @@ return [
     | 不同群組。預設行為維持原「郵件行銷」群組，與既有安裝相容。
     */
 
-    'navigation_group'      => '郵件行銷',
-    'navigation_sort'       => 10,
+    'navigation_group' => '郵件行銷',
+    'navigation_sort'  => 10,
 
     'smtp_navigation_group' => '全站管理',
     'smtp_navigation_sort'  => 90,
