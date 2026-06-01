@@ -35,6 +35,8 @@ use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\ListE
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\ViewEmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\DeliveriesRelationManager;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\RecipientsRelationManager;
+use Lalalili\SurveyCore\Enums\SurveyStatus;
+use Lalalili\SurveyCore\Models\Survey;
 
 class EmailCampaignResource extends Resource
 {
@@ -45,11 +47,11 @@ class EmailCampaignResource extends Resource
         return 'heroicon-o-envelope';
     }
 
-    protected static ?string $navigationLabel = 'EDM 活動';
+    protected static ?string $navigationLabel = 'Email 活動';
 
     protected static ?string $modelLabel = '活動';
 
-    protected static ?string $pluralModelLabel = 'EDM 活動';
+    protected static ?string $pluralModelLabel = 'Email 活動';
 
     public static function getNavigationGroup(): ?string
     {
@@ -93,7 +95,7 @@ class EmailCampaignResource extends Resource
                     $set('audience_email_column', self::surveyAudienceEmailColumn($state));
                     $set('extras_json', self::surveyPersonalizationMappings($state, $get('extras_json')));
                 })
-                ->helperText('選擇問卷後，主旨與 EDM 內容可使用 {{ survey_url }} 帶入每位收件人的問卷個性化網址。')
+                ->helperText('選擇問卷後，主旨與 Email 內容可使用 {{ survey_url }} 帶入每位收件人的問卷個性化網址。')
                 ->columnSpanFull(),
 
             Select::make('audience_list_id')
@@ -143,7 +145,7 @@ class EmailCampaignResource extends Resource
                 ->columnSpanFull(),
 
             RichEditor::make('html_template')
-                ->label('EDM 內容')
+                ->label('Email 內容')
                 ->nullable()
                 ->helperText('可使用個性化變數，例如：親愛的 {{ name }} 會員，請填寫 {{ survey_url }}。寄送 HTML 時，{{ survey_url }} 會自動轉為另開分頁連結。')
                 ->columnSpanFull(),
@@ -168,7 +170,7 @@ class EmailCampaignResource extends Resource
                 ])
                 ->columns(2)
                 ->addActionLabel('新增個性化對應')
-                ->helperText('左邊選擇名單欄位，右邊設定 EDM 內容與主旨可使用的關鍵字，例如：車牌號碼 -> number 後可使用 {{ number }}。')
+                ->helperText('左邊選擇名單欄位，右邊設定 Email 內容與主旨可使用的關鍵字，例如：車牌號碼 -> number 後可使用 {{ number }}。')
                 ->nullable()
                 ->columnSpanFull(),
         ]);
@@ -187,11 +189,11 @@ class EmailCampaignResource extends Resource
                     ->label('狀態')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        EmailCampaignStatus::Sent      => 'success',
-                        EmailCampaignStatus::Sending   => 'warning',
+                        EmailCampaignStatus::Sent => 'success',
+                        EmailCampaignStatus::Sending => 'warning',
                         EmailCampaignStatus::Scheduled => 'info',
-                        EmailCampaignStatus::Failed    => 'danger',
-                        default                        => 'gray',
+                        EmailCampaignStatus::Failed => 'danger',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof EmailCampaignStatus ? $state->label() : $state),
 
@@ -304,10 +306,10 @@ class EmailCampaignResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListEmailCampaigns::route('/'),
+            'index' => ListEmailCampaigns::route('/'),
             'create' => CreateEmailCampaign::route('/create'),
-            'edit'   => EditEmailCampaign::route('/{record}/edit'),
-            'view'   => ViewEmailCampaign::route('/{record}'),
+            'edit' => EditEmailCampaign::route('/{record}/edit'),
+            'view' => ViewEmailCampaign::route('/{record}'),
         ];
     }
 
@@ -352,37 +354,37 @@ class EmailCampaignResource extends Resource
      */
     private static function surveyOptions(): array
     {
-        if (! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+        if (! class_exists(Survey::class)) {
             return [];
         }
 
-        return \Lalalili\SurveyCore\Models\Survey::query()
-            ->where('status', \Lalalili\SurveyCore\Enums\SurveyStatus::Published->value)
+        return Survey::query()
+            ->where('status', SurveyStatus::Published->value)
             ->orderBy('title')
             ->get()
-            ->filter(fn (\Lalalili\SurveyCore\Models\Survey $survey): bool => $survey->settings()->audienceListId !== null)
-            ->mapWithKeys(fn (\Lalalili\SurveyCore\Models\Survey $survey): array => [$survey->id => $survey->title])
+            ->filter(fn (Survey $survey): bool => $survey->settings()->audienceListId !== null)
+            ->mapWithKeys(fn (Survey $survey): array => [$survey->id => $survey->title])
             ->all();
     }
 
     private static function surveyAudienceListId(mixed $surveyId): ?int
     {
-        if (! $surveyId || ! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+        if (! $surveyId || ! class_exists(Survey::class)) {
             return null;
         }
 
-        $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
+        $survey = Survey::query()->find((int) $surveyId);
 
         return $survey?->settings()->audienceListId;
     }
 
     private static function surveyAudienceEmailColumn(mixed $surveyId): ?string
     {
-        if (! $surveyId || ! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+        if (! $surveyId || ! class_exists(Survey::class)) {
             return null;
         }
 
-        $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
+        $survey = Survey::query()->find((int) $surveyId);
         $emailColumn = $survey?->settings()->emailColumn;
 
         return filled($emailColumn) ? $emailColumn : null;
@@ -396,7 +398,7 @@ class EmailCampaignResource extends Resource
         $mappings = collect(is_array($currentMappings) ? $currentMappings : [])
             ->filter(fn (mixed $mapping): bool => is_array($mapping))
             ->map(fn (array $mapping): array => [
-                'source'  => trim((string) ($mapping['source'] ?? '')),
+                'source' => trim((string) ($mapping['source'] ?? '')),
                 'keyword' => trim((string) ($mapping['keyword'] ?? '')),
             ])
             ->filter(fn (array $mapping): bool => $mapping['source'] !== '' && $mapping['keyword'] !== '' && $mapping['keyword'] !== 'user_name')
@@ -407,7 +409,7 @@ class EmailCampaignResource extends Resource
 
         if (filled($nameColumn)) {
             $mappings[] = [
-                'source'  => $nameColumn,
+                'source' => $nameColumn,
                 'keyword' => 'user_name',
             ];
         }
@@ -417,11 +419,11 @@ class EmailCampaignResource extends Resource
 
     private static function surveyAudienceNameColumn(mixed $surveyId): ?string
     {
-        if (! $surveyId || ! class_exists(\Lalalili\SurveyCore\Models\Survey::class)) {
+        if (! $surveyId || ! class_exists(Survey::class)) {
             return null;
         }
 
-        $survey = \Lalalili\SurveyCore\Models\Survey::query()->find((int) $surveyId);
+        $survey = Survey::query()->find((int) $surveyId);
         $nameColumn = $survey?->settings()->nameColumn;
 
         return filled($nameColumn) ? $nameColumn : null;

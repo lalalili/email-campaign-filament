@@ -6,14 +6,14 @@ return [
     |--------------------------------------------------------------------------
     | Navigation
     |--------------------------------------------------------------------------
-    | EDM 活動 與 SMTP 設定檔 各自獨立 config key，方便 host app 將它們分開放到
+    | Email 活動 與 SMTP 設定檔 各自獨立 config key，方便 host app 將它們分開放到
     | 不同群組。預設行為維持原「郵件行銷」群組，與既有安裝相容。
     */
 
     'navigation_group' => '郵件行銷',
-    'navigation_sort'  => 10,
+    'navigation_sort' => 10,
 
     'smtp_navigation_group' => '全站管理',
-    'smtp_navigation_sort'  => 90,
+    'smtp_navigation_sort' => 90,
 
 ];
