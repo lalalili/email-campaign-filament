@@ -53,10 +53,18 @@ class EmailSmtpProfileResource extends Resource
 
             Select::make('mailer')
                 ->label('驅動')
-                ->options([
-                    'smtp' => 'SMTP',
-                    'log'  => 'Log（測試用）',
-                ])
+                ->options(fn (): array => (bool) config('email-campaign.demo_safe_mode', false)
+                    ? [
+                        'smtp' => 'SMTP（Demo 模式不會實際寄出）',
+                        'log'  => 'Log（Demo 模式）',
+                    ]
+                    : [
+                        'smtp' => 'SMTP',
+                        'log'  => 'Log（測試用）',
+                    ])
+                ->helperText(fn (): ?string => (bool) config('email-campaign.demo_safe_mode', false)
+                    ? '目前啟用 Demo 安全模式：SMTP 設定只供介面展示與資料流程測試，不會外送 Email。'
+                    : null)
                 ->required()
                 ->default('smtp')
                 ->live(),
