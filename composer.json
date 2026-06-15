@@ -25,6 +25,9 @@
         "phpstan/phpstan": "^2.1",
         "lalalili/package-testing-support": "*"
     },
+    "conflict": {
+        "guzzlehttp/psr7": "<2.10.2"
+    },
     "repositories": [
         {
             "type": "path",
