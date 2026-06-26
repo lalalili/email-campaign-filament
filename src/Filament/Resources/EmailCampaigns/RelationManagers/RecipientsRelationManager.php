@@ -2,6 +2,8 @@
 
 namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers;
 
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -59,9 +61,38 @@ class RecipientsRelationManager extends RelationManager
                     ->placeholder('未排入')
                     ->formatStateUsing(fn ($state) => $state?->label() ?? '—'),
             ])
-            ->headerActions([CreateAction::make()->label('新增收件人')])
-            ->actions([EditAction::make()->label('編輯'), DeleteAction::make()->label('刪除')])
+            ->headerActions(array_values(array_filter([
+                $this->recipientImportAction(),
+                CreateAction::make()->label('新增收件人'),
+            ])))
+            ->actions([
+                ActionGroup::make([
+                    EditAction::make()->label('編輯'),
+                    DeleteAction::make()->label('刪除'),
+                ]),
+            ])
             ->bulkActions([DeleteBulkAction::make()->label('批次刪除')]);
+    }
+
+    /**
+     * Excel/CSV bulk import, available when the optional eightynine/filament-excel-import
+     * package is installed. Delegates row handling to App\Filament\Imports\EmailCampaignRecipientImport.
+     */
+    private function recipientImportAction(): ?Action
+    {
+        $actionClass = 'EightyNine\\ExcelImport\\Tables\\ExcelImportRelationshipAction';
+
+        if (! class_exists($actionClass)) {
+            return null;
+        }
+
+        $action = $actionClass::make()
+            ->label('匯入收件人 (Excel / CSV)')
+            ->color('gray');
+
+        $action->{'use'}('App\\Filament\\Imports\\EmailCampaignRecipientImport');
+
+        return $action;
     }
 
     public function isReadOnly(): bool

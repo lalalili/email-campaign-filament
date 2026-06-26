@@ -3,6 +3,7 @@
 namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailSmtpProfiles;
 
 use BackedEnum;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -35,12 +36,12 @@ class EmailSmtpProfileResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return config('email-campaign-filament.smtp_navigation_group', '全站管理');
+        return '系統';
     }
 
     public static function getNavigationSort(): ?int
     {
-        return config('email-campaign-filament.smtp_navigation_sort', 90);
+        return 86;
     }
 
     public static function form(Schema $schema): Schema
@@ -56,11 +57,11 @@ class EmailSmtpProfileResource extends Resource
                 ->options(fn (): array => (bool) config('email-campaign.demo_safe_mode', false)
                     ? [
                         'smtp' => 'SMTP（Demo 模式不會實際寄出）',
-                        'log'  => 'Log（Demo 模式）',
+                        'log' => 'Log（Demo 模式）',
                     ]
                     : [
                         'smtp' => 'SMTP',
-                        'log'  => 'Log（測試用）',
+                        'log' => 'Log（測試用）',
                     ])
                 ->helperText(fn (): ?string => (bool) config('email-campaign.demo_safe_mode', false)
                     ? '目前啟用 Demo 安全模式：SMTP 設定只供介面展示與資料流程測試，不會外送 Email。'
@@ -124,18 +125,21 @@ class EmailSmtpProfileResource extends Resource
                 TextColumn::make('from_name')->label('寄件人名稱'),
                 IconColumn::make('is_default')->label('預設')->boolean(),
             ])
+            ->recordUrl(null)
             ->actions([
-                EditAction::make()->label('編輯'),
-                DeleteAction::make()->label('刪除'),
+                ActionGroup::make([
+                    EditAction::make()->label('編輯'),
+                    DeleteAction::make()->label('刪除'),
+                ]),
             ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => ListEmailSmtpProfiles::route('/'),
+            'index' => ListEmailSmtpProfiles::route('/'),
             'create' => CreateEmailSmtpProfile::route('/create'),
-            'edit'   => EditEmailSmtpProfile::route('/{record}/edit'),
+            'edit' => EditEmailSmtpProfile::route('/{record}/edit'),
         ];
     }
 }

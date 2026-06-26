@@ -37,6 +37,8 @@ use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationMan
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\RecipientsRelationManager;
 use Lalalili\SurveyCore\Enums\SurveyStatus;
 use Lalalili\SurveyCore\Models\Survey;
+use Lalalili\SurveyCore\Support\ImageUploadSanitizer;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class EmailCampaignResource extends Resource
 {
@@ -49,18 +51,23 @@ class EmailCampaignResource extends Resource
 
     protected static ?string $navigationLabel = 'Email 活動';
 
-    protected static ?string $modelLabel = '活動';
+    protected static ?string $modelLabel = 'Email 活動';
 
     protected static ?string $pluralModelLabel = 'Email 活動';
 
     public static function getNavigationGroup(): ?string
     {
-        return config('email-campaign-filament.navigation_group', '郵件行銷');
+        return '活動自動化';
     }
 
     public static function getNavigationSort(): ?int
     {
-        return config('email-campaign-filament.navigation_sort', 10);
+        return 50;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 
     public static function form(Schema $schema): Schema
@@ -148,6 +155,27 @@ class EmailCampaignResource extends Resource
                 ->label('Email 內容')
                 ->nullable()
                 ->helperText('可使用個性化變數，例如：親愛的 {{ name }} 會員，請填寫 {{ survey_url }}。寄送 HTML 時，{{ survey_url }} 會自動轉為另開分頁連結。')
+                ->fileAttachmentsDisk((string) config('marketing.filament.email_images.disk', 'public'))
+                ->fileAttachmentsDirectory((string) config('marketing.filament.email_images.directory', 'marketing-emails'))
+                ->fileAttachmentsVisibility('public')
+                ->fileAttachmentsAcceptedFileTypes((array) config('marketing.filament.email_images.accepted_file_types', [
+                    'image/jpeg',
+                    'image/png',
+                    'image/webp',
+                    'image/gif',
+                ]))
+                ->fileAttachmentsMaxSize((int) config('marketing.filament.email_images.max_size', 5120))
+                ->saveUploadedFileAttachmentUsing(
+                    fn (TemporaryUploadedFile $file): ?string => app(ImageUploadSanitizer::class)->store(
+                        $file,
+                        (string) config('marketing.filament.email_images.directory', 'marketing-emails'),
+                        (string) config('marketing.filament.email_images.disk', 'public'),
+                        'public',
+                    ) ?: null,
+                )
+                ->preventFileAttachmentPathTampering(
+                    allowFilePathUsing: fn (string $file): bool => str_starts_with($file, (string) config('marketing.filament.email_images.directory', 'marketing-emails').'/'),
+                )
                 ->columnSpanFull(),
 
             Repeater::make('extras_json')

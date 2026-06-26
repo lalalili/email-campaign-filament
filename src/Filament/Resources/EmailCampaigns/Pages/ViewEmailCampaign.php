@@ -5,6 +5,8 @@ namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -12,6 +14,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Lalalili\EmailCampaign\Actions\ResetStalledCampaignAction;
 use Lalalili\EmailCampaign\Actions\SendCampaignAction;
+use Lalalili\EmailCampaign\Actions\SendTestCampaignEmailAction;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
@@ -30,6 +33,53 @@ class ViewEmailCampaign extends ViewRecord
     {
         return [
             EditAction::make()->label('編輯'),
+
+            Action::make('test_send')
+                ->label('測試寄送')
+                ->icon('heroicon-o-beaker')
+                ->color('gray')
+                ->form([
+                    TextInput::make('test_email')
+                        ->label('測試收件信箱')
+                        ->email()
+                        ->required()
+                        ->default(fn (): ?string => filled($email = data_get(auth()->user(), 'email')) ? (string) $email : null),
+                    Select::make('sample_recipient_id')
+                        ->label('套用個人化變數的樣本收件人')
+                        ->options(fn () => $this->record->recipients()->limit(50)->pluck('email', 'id'))
+                        ->placeholder('（不套用，使用空白變數）')
+                        ->searchable(),
+                ])
+                ->action(function (array $data): void {
+                    $recipient = filled($data['sample_recipient_id'] ?? null)
+                        ? $this->record->recipients()->whereKey($data['sample_recipient_id'])->first()
+                        : null;
+
+                    try {
+                        $rendered = app(SendTestCampaignEmailAction::class)->execute(
+                            $this->record,
+                            $data['test_email'],
+                            $recipient,
+                        );
+
+                        $notification = Notification::make()->title('測試信已寄出')->success()
+                            ->body("已寄至 {$data['test_email']}。");
+
+                        if ($rendered->missingVariables !== []) {
+                            $notification->warning()
+                                ->body("已寄至 {$data['test_email']}。注意：以下變數未取得值 — ".implode('、', $rendered->missingVariables));
+                        }
+
+                        $notification->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('測試寄送失敗')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                })
+                ->modalSubmitActionLabel('寄出測試信'),
 
             Action::make('send')
                 ->label(fn () => $this->record->status === EmailCampaignStatus::Failed ? '重新寄送' : '立即寄出')
@@ -100,7 +150,7 @@ class ViewEmailCampaign extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     $this->record->update([
-                        'status'       => EmailCampaignStatus::Scheduled,
+                        'status' => EmailCampaignStatus::Scheduled,
                         'scheduled_at' => $data['scheduled_at'],
                     ]);
 
