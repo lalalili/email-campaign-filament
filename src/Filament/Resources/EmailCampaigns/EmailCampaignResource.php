@@ -3,7 +3,6 @@
 namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns;
 
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -14,7 +13,6 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -24,11 +22,11 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 use Lalalili\AudienceCore\Models\AudienceList;
-use Lalalili\EmailCampaign\Actions\ResetStalledCampaignAction;
-use Lalalili\EmailCampaign\Actions\SendCampaignAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
 use Lalalili\EmailCampaign\Models\EmailSmtpProfile;
+use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\ResetStalledCampaignRecordAction;
+use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\SendCampaignRecordAction;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\CreateEmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\EditEmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\ListEmailCampaigns;
@@ -267,55 +265,9 @@ class EmailCampaignResource extends Resource
                     ViewAction::make()->label('檢視'),
                     EditAction::make()->label('編輯'),
 
-                    Action::make('send')
-                        ->label(fn (EmailCampaign $record): string => $record->status === EmailCampaignStatus::Failed ? '重新寄送' : '立即寄出')
-                        ->icon('heroicon-o-paper-airplane')
-                        ->color('success')
-                        ->visible(fn (EmailCampaign $record) => in_array($record->status, [EmailCampaignStatus::Draft, EmailCampaignStatus::Scheduled, EmailCampaignStatus::Failed]))
-                        ->action(function (EmailCampaign $record): void {
-                            try {
-                                app(SendCampaignAction::class)->execute($record);
+                    SendCampaignRecordAction::make(),
 
-                                Notification::make()
-                                    ->title('已派發寄送任務')
-                                    ->success()
-                                    ->send();
-                            } catch (\Throwable $e) {
-                                Notification::make()
-                                    ->title('寄送任務派發失敗')
-                                    ->body($e->getMessage())
-                                    ->danger()
-                                    ->send();
-                            }
-                        })
-                        ->requiresConfirmation()
-                        ->modalHeading('確認立即寄出')
-                        ->modalDescription('將對所有收件人派發寄送任務，確定嗎？'),
-
-                    Action::make('reset_stalled')
-                        ->label('重設為草稿')
-                        ->icon('heroicon-o-arrow-path')
-                        ->color('warning')
-                        ->visible(fn (EmailCampaign $record): bool => $record->status === EmailCampaignStatus::Sending && ! $record->deliveries()->exists())
-                        ->action(function (EmailCampaign $record): void {
-                            if (app(ResetStalledCampaignAction::class)->execute($record)) {
-                                Notification::make()
-                                    ->title('已重設為草稿')
-                                    ->success()
-                                    ->send();
-
-                                return;
-                            }
-
-                            Notification::make()
-                                ->title('無法重設活動')
-                                ->body('此活動已有寄送紀錄或狀態已變更。')
-                                ->danger()
-                                ->send();
-                        })
-                        ->requiresConfirmation()
-                        ->modalHeading('確認重設為草稿')
-                        ->modalDescription('僅適用於尚未產生任何寄送紀錄的寄送中活動。'),
+                    ResetStalledCampaignRecordAction::make(),
 
                     DeleteAction::make()->label('刪除'),
                 ]),

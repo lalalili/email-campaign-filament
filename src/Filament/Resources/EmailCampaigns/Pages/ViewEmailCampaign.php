@@ -12,12 +12,12 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
-use Lalalili\EmailCampaign\Actions\ResetStalledCampaignAction;
-use Lalalili\EmailCampaign\Actions\SendCampaignAction;
 use Lalalili\EmailCampaign\Actions\SendTestCampaignEmailAction;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
+use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\ResetStalledCampaignRecordAction;
+use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\SendCampaignRecordAction;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\EmailCampaignResource;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\DeliveriesRelationManager;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationManagers\RecipientsRelationManager;
@@ -38,6 +38,7 @@ class ViewEmailCampaign extends ViewRecord
                 ->label('測試寄送')
                 ->icon('heroicon-o-beaker')
                 ->color('gray')
+                ->authorize(fn (): bool => auth()->user()?->can('update', $this->record) ?? false)
                 ->form([
                     TextInput::make('test_email')
                         ->label('測試收件信箱')
@@ -81,67 +82,17 @@ class ViewEmailCampaign extends ViewRecord
                 })
                 ->modalSubmitActionLabel('寄出測試信'),
 
-            Action::make('send')
-                ->label(fn () => $this->record->status === EmailCampaignStatus::Failed ? '重新寄送' : '立即寄出')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('success')
-                ->visible(fn () => in_array($this->record->status, [EmailCampaignStatus::Draft, EmailCampaignStatus::Scheduled, EmailCampaignStatus::Failed]))
-                ->action(function (): void {
-                    try {
-                        app(SendCampaignAction::class)->execute($this->record);
-                        $this->record->refresh();
+            SendCampaignRecordAction::make()
+                ->after(fn () => $this->record->refresh()),
 
-                        Notification::make()
-                            ->title('已派發寄送任務')
-                            ->success()
-                            ->send();
-                    } catch (\Throwable $e) {
-                        $this->record->refresh();
-
-                        Notification::make()
-                            ->title('寄送任務派發失敗')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
-                })
-                ->requiresConfirmation()
-                ->modalHeading('確認立即寄出')
-                ->modalDescription('將對所有收件人派發寄送任務，確定嗎？'),
-
-            Action::make('reset_stalled')
-                ->label('重設為草稿')
-                ->icon('heroicon-o-arrow-path')
-                ->color('warning')
-                ->visible(fn (): bool => $this->record->status === EmailCampaignStatus::Sending && ! $this->record->deliveries()->exists())
-                ->action(function (): void {
-                    if (app(ResetStalledCampaignAction::class)->execute($this->record)) {
-                        $this->record->refresh();
-
-                        Notification::make()
-                            ->title('已重設為草稿')
-                            ->success()
-                            ->send();
-
-                        return;
-                    }
-
-                    $this->record->refresh();
-
-                    Notification::make()
-                        ->title('無法重設活動')
-                        ->body('此活動已有寄送紀錄或狀態已變更。')
-                        ->danger()
-                        ->send();
-                })
-                ->requiresConfirmation()
-                ->modalHeading('確認重設為草稿')
-                ->modalDescription('僅適用於尚未產生任何寄送紀錄的寄送中活動。'),
+            ResetStalledCampaignRecordAction::make()
+                ->after(fn () => $this->record->refresh()),
 
             Action::make('schedule')
                 ->label('設定排程')
                 ->icon('heroicon-o-clock')
                 ->color('warning')
+                ->authorize(fn (): bool => auth()->user()?->can('update', $this->record) ?? false)
                 ->visible(fn () => $this->record->status === EmailCampaignStatus::Draft)
                 ->form([
                     DateTimePicker::make('scheduled_at')
