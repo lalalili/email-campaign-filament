@@ -22,7 +22,7 @@
         "pestphp/pest-plugin-livewire": "^3.0",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.0",
-        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan": "~2.2.0",
         "lalalili/package-testing-support": "*"
     },
     "repositories": [
