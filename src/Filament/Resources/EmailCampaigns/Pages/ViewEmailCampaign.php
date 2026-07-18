@@ -10,11 +10,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Lalalili\EmailCampaign\Actions\SendTestCampaignEmailAction;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
+use Lalalili\EmailCampaign\Enums\EmailDeliveryStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\ResetStalledCampaignRecordAction;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\SendCampaignRecordAction;
@@ -122,7 +124,54 @@ class ViewEmailCampaign extends ViewRecord
             TextEntry::make('audience_skipped_count')->label('名單略過筆數')->placeholder('0'),
             TextEntry::make('scheduled_at')->label('排程時間')->dateTime()->placeholder('—'),
             TextEntry::make('sent_at')->label('寄出時間')->dateTime()->placeholder('—'),
+
+            Section::make('寄送統計')
+                ->columns(3)
+                ->schema([
+                    TextEntry::make('stats_total')->label('收件人總數')
+                        ->state(fn (): int => $this->deliveryStats()['total']),
+                    TextEntry::make('stats_sent')->label('已寄出')
+                        ->state(fn (): int => $this->deliveryStats()['sent']),
+                    TextEntry::make('stats_rate')->label('成功率')
+                        ->state(fn (): string => $this->deliveryStats()['rate'].'%'),
+                    TextEntry::make('stats_failed')->label('失敗')
+                        ->state(fn (): int => $this->deliveryStats()['failed']),
+                    TextEntry::make('stats_skipped')->label('略過')
+                        ->state(fn (): int => $this->deliveryStats()['skipped']),
+                    TextEntry::make('stats_pending')->label('待寄送')
+                        ->state(fn (): int => $this->deliveryStats()['pending']),
+                ]),
         ]);
+    }
+
+    /** @var array{total: int, sent: int, failed: int, skipped: int, pending: int, rate: float} */
+    private array $deliveryStatsCache;
+
+    /**
+     * 單次 grouped 查詢彙整寄送統計，於同一次 infolist 渲染間記憶化。
+     *
+     * @return array{total: int, sent: int, failed: int, skipped: int, pending: int, rate: float}
+     */
+    public function deliveryStats(): array
+    {
+        if (isset($this->deliveryStatsCache)) {
+            return $this->deliveryStatsCache;
+        }
+
+        $counts = $this->record->deliveries()
+            ->toBase()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $sent = (int) ($counts[EmailDeliveryStatus::Sent->value] ?? 0);
+        $failed = (int) ($counts[EmailDeliveryStatus::Failed->value] ?? 0);
+        $skipped = (int) ($counts[EmailDeliveryStatus::Skipped->value] ?? 0);
+        $pending = (int) ($counts[EmailDeliveryStatus::Pending->value] ?? 0);
+        $total = $this->record->recipients()->count();
+        $rate = $total > 0 ? round($sent / $total * 100, 1) : 0.0;
+
+        return $this->deliveryStatsCache = compact('total', 'sent', 'failed', 'skipped', 'pending', 'rate');
     }
 
     public function getRelationManagers(): array
