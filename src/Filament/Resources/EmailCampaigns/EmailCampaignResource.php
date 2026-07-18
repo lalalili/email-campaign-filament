@@ -8,6 +8,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -21,10 +22,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Lalalili\AudienceCore\Models\AudienceList;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
 use Lalalili\EmailCampaign\Models\EmailCampaign;
 use Lalalili\EmailCampaign\Models\EmailSmtpProfile;
+use Lalalili\EmailCampaign\Support\VariableProviderRegistry;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\ResetStalledCampaignRecordAction;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Actions\SendCampaignRecordAction;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages\CreateEmailCampaign;
@@ -174,6 +177,11 @@ class EmailCampaignResource extends Resource
                 ->preventFileAttachmentPathTampering(
                     allowFilePathUsing: fn (string $file): bool => str_starts_with($file, (string) config('marketing.filament.email_images.directory', 'marketing-emails').'/'),
                 )
+                ->columnSpanFull(),
+
+            Placeholder::make('available_variables')
+                ->label('可用個性化變數')
+                ->content(fn (): HtmlString => self::availableVariablesContent())
                 ->columnSpanFull(),
 
             Repeater::make('extras_json')
@@ -327,6 +335,32 @@ class EmailCampaignResource extends Resource
         }
 
         return AudienceList::query()->find((int) $audienceListId)?->columnOptions() ?? [];
+    }
+
+    /**
+     * 由 VariableProviderRegistry 動態列出目前可用的個性化變數，取代寫死的說明文字。
+     */
+    private static function availableVariablesContent(): HtmlString
+    {
+        $variables = app(VariableProviderRegistry::class)->describe();
+
+        if ($variables === []) {
+            return new HtmlString('<span class="text-sm text-gray-500">目前沒有可用的個性化變數。</span>');
+        }
+
+        $items = collect($variables)
+            ->map(fn (array $variable): string => sprintf(
+                '<li><code>{{ %s }}</code> — %s</li>',
+                e($variable['key']),
+                e($variable['label']),
+            ))
+            ->implode('');
+
+        return new HtmlString(
+            '<div class="text-sm text-gray-600 dark:text-gray-300">在主旨與內容中可插入下列變數：'
+            .'<ul class="mt-1 space-y-1">'.$items.'</ul>'
+            .'名單欄位另可於「個性化對應」設定。</div>',
+        );
     }
 
     /**
