@@ -181,7 +181,7 @@ class EmailCampaignResource extends Resource
 
             Placeholder::make('available_variables')
                 ->label('可用個性化變數')
-                ->content(fn (): HtmlString => self::availableVariablesContent())
+                ->content(fn (Get $get): HtmlString => self::availableVariablesContent($get('audience_list_id')))
                 ->columnSpanFull(),
 
             Repeater::make('extras_json')
@@ -338,29 +338,82 @@ class EmailCampaignResource extends Resource
     }
 
     /**
-     * 由 VariableProviderRegistry 動態列出目前可用的個性化變數，取代寫死的說明文字。
+     * 列出目前可用的個性化變數：VariableProviderRegistry 描述的固定變數，
+     * 加上所選名單的欄位。
+     *
+     * 名單欄位會被 RecipientVariableProvider 直接攤平成變數，作者可原樣使用，
+     * 但那是執行期才成立的行為，過去在後台看不到——只能猜欄位名，猜錯就會把
+     * 字面的 {{ 變數 }} 寄給真實客戶。
      */
-    private static function availableVariablesContent(): HtmlString
+    private static function availableVariablesContent(mixed $audienceListId): HtmlString
     {
         $variables = app(VariableProviderRegistry::class)->describe();
+        $reserved = array_column($variables, 'key');
 
-        if ($variables === []) {
-            return new HtmlString('<span class="text-sm text-gray-500">目前沒有可用的個性化變數。</span>');
+        $sections = [];
+
+        if ($variables !== []) {
+            $sections[] = '<p class="mt-2 font-medium">系統變數</p><ul class="mt-1 space-y-1">'
+                .self::variableListItems($variables).'</ul>';
         }
 
-        $items = collect($variables)
+        $audienceColumns = self::audienceVariableDescriptors($audienceListId, $reserved);
+
+        if ($audienceColumns !== []) {
+            $sections[] = '<p class="mt-3 font-medium">名單欄位</p><ul class="mt-1 space-y-1">'
+                .self::variableListItems($audienceColumns).'</ul>';
+        } elseif (filled($audienceListId)) {
+            $sections[] = '<p class="mt-3 text-gray-500">此名單沒有可用的欄位變數。</p>';
+        } else {
+            $sections[] = '<p class="mt-3 text-gray-500">選擇名單後，這裡會列出該名單的欄位變數。</p>';
+        }
+
+        return new HtmlString(
+            '<div class="text-sm text-gray-600 dark:text-gray-300">在主旨與內容中可插入下列變數：'
+            .implode('', $sections)
+            .'<p class="mt-3 text-gray-500">若要改用其他名稱，可於下方「個性化對應」另行設定關鍵字。</p></div>',
+        );
+    }
+
+    /**
+     * @param  list<array{key: string, label: string}>  $variables
+     */
+    private static function variableListItems(array $variables): string
+    {
+        return collect($variables)
             ->map(fn (array $variable): string => sprintf(
                 '<li><code>{{ %s }}</code> — %s</li>',
                 e($variable['key']),
                 e($variable['label']),
             ))
             ->implode('');
+    }
 
-        return new HtmlString(
-            '<div class="text-sm text-gray-600 dark:text-gray-300">在主旨與內容中可插入下列變數：'
-            .'<ul class="mt-1 space-y-1">'.$items.'</ul>'
-            .'名單欄位另可於「個性化對應」設定。</div>',
-        );
+    /**
+     * 名單欄位轉成變數描述。與系統變數同名者不列出：RecipientVariableProvider
+     * 保留那些鍵，名單同名欄位不會覆蓋它們，列出來反而誤導。
+     *
+     * @param  list<string>  $reserved
+     * @return list<array{key: string, label: string}>
+     */
+    private static function audienceVariableDescriptors(mixed $audienceListId, array $reserved): array
+    {
+        $descriptors = [];
+
+        foreach (self::audienceColumnOptions($audienceListId) as $key => $label) {
+            $key = (string) $key;
+
+            if ($key === '' || in_array($key, $reserved, true)) {
+                continue;
+            }
+
+            $descriptors[] = [
+                'key' => $key,
+                'label' => (string) $label,
+            ];
+        }
+
+        return $descriptors;
     }
 
     /**
