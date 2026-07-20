@@ -14,6 +14,10 @@ class DeliveriesRelationManager extends RelationManager
 
     protected static ?string $title = '寄送紀錄';
 
+    protected static ?string $modelLabel = '寄送紀錄';
+
+    protected static ?string $pluralModelLabel = '寄送紀錄';
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([]);
