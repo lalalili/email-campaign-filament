@@ -121,8 +121,8 @@ class EmailSmtpProfileResource extends Resource
             ->columns([
                 TextColumn::make('name')->label('名稱')->sortable()->searchable(),
                 TextColumn::make('mailer')->label('驅動'),
-                TextColumn::make('from_address')->label('寄件人 Email'),
-                TextColumn::make('from_name')->label('寄件人名稱'),
+                TextColumn::make('from_address')->label('寄件人 Email')->searchable(),
+                TextColumn::make('from_name')->label('寄件人名稱')->searchable(),
                 IconColumn::make('is_default')->label('預設')->boolean(),
             ])
             ->recordUrl(null)

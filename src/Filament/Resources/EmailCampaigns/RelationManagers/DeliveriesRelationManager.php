@@ -38,7 +38,9 @@ class DeliveriesRelationManager extends RelationManager
                         default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof EmailDeliveryStatus ? $state->label() : $state),
-                TextColumn::make('rendered_subject')->label('實際主旨')->placeholder('—')->toggleable(),
+                // 寄送明細會長到數十萬列，併進全域搜尋等於每次都多一次全表掃描；
+                // isIndividual 讓使用者針對這一欄搜，其餘欄位不受影響。
+                TextColumn::make('rendered_subject')->label('實際主旨')->searchable(isIndividual: true)->placeholder('—')->toggleable(),
                 TextColumn::make('error_message')->label('錯誤訊息')->placeholder('—')->wrap()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('sent_at')->label('寄出時間')->dateTime()->placeholder('—')->sortable(),
             ])

@@ -54,8 +54,8 @@ class RecipientsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('email')->label('Email')->searchable(),
-                TextColumn::make('user_name')->label('姓名')->placeholder('—'),
-                TextColumn::make('external_id')->label('外部 ID')->placeholder('—')->toggleable(),
+                TextColumn::make('user_name')->label('姓名')->searchable()->placeholder('—'),
+                TextColumn::make('external_id')->label('外部 ID')->searchable()->placeholder('—')->toggleable(),
                 TextColumn::make('delivery.status')
                     ->label('寄送狀態')
                     ->placeholder('未排入')
