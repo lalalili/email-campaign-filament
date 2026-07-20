@@ -45,6 +45,8 @@ abstract class FilamentTestCase extends TestCase
 
     protected function defineDatabaseMigrations(): void
     {
+        parent::defineDatabaseMigrations();
+
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
