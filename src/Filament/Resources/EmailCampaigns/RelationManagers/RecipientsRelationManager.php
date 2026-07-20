@@ -24,10 +24,13 @@ class RecipientsRelationManager extends RelationManager
     protected static ?string $modelLabel = '收件人';
 
     /**
-     * external_id 是串接名單、發信與問卷收件人的鍵，不是給人閱讀的編號；
-     * 光看欄位名看不出用途，列表與表單都掛這段說明。
+     * external_id 是對應來源系統的識別碼，不是給人閱讀的編號；光看欄位名看不出
+     * 用途，列表與表單都掛這段說明。
+     *
+     * 註：問卷個人化連結的主要比對鍵是 audience_list_row_id（見 SurveyVariableProvider），
+     * external_id 只在收件人沒有名單列來源（例如手動匯入）時作為備援。
      */
-    public const string EXTERNAL_ID_HINT = '跨系統對應同一位收件人的識別碼。問卷邀請信靠它產生個人化連結，對應不到時該筆回覆無法歸戶。';
+    public const string EXTERNAL_ID_HINT = '對應來源系統的識別碼，供對帳、去重與跨系統追蹤。名單同步時自動填入名單資料列 ID；手動匯入的收件人另以此欄比對問卷收件人。';
 
     public function form(Schema $schema): Schema
     {
