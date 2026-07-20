@@ -23,6 +23,12 @@ class RecipientsRelationManager extends RelationManager
 
     protected static ?string $modelLabel = '收件人';
 
+    /**
+     * external_id 是串接名單、發信與問卷收件人的鍵，不是給人閱讀的編號；
+     * 光看欄位名看不出用途，列表與表單都掛這段說明。
+     */
+    public const string EXTERNAL_ID_HINT = '跨系統對應同一位收件人的識別碼。問卷邀請信靠它產生個人化連結，對應不到時該筆回覆無法歸戶。';
+
     public function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -37,9 +43,9 @@ class RecipientsRelationManager extends RelationManager
                 ->maxLength(255),
 
             TextInput::make('external_id')
-                ->label('外部 ID')
+                ->label('外部識別碼')
                 ->maxLength(255)
-                ->helperText('對應系統的使用者/收件人 ID，可用於 survey 整合。'),
+                ->helperText(self::EXTERNAL_ID_HINT),
 
             KeyValue::make('payload_json')
                 ->label('自訂欄位')
@@ -55,7 +61,13 @@ class RecipientsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('email')->label('Email')->searchable(),
                 TextColumn::make('user_name')->label('姓名')->searchable()->placeholder('—'),
-                TextColumn::make('external_id')->label('外部 ID')->searchable()->placeholder('—')->toggleable(),
+                TextColumn::make('external_id')
+                    ->label('外部識別碼')
+                    ->extraHeaderAttributes(['title' => self::EXTERNAL_ID_HINT])
+                    ->tooltip(self::EXTERNAL_ID_HINT)
+                    ->searchable()
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('delivery.status')
                     ->label('寄送狀態')
                     ->placeholder('未排入')
