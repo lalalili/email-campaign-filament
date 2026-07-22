@@ -277,10 +277,18 @@ class EmailCampaignResource extends Resource
 
                     ResetStalledCampaignRecordAction::make(),
 
-                    DeleteAction::make()->label('刪除'),
+                    self::deleteAction(),
                 ]),
             ])
             ->bulkActions([]);
+    }
+
+    public static function deleteAction(): DeleteAction
+    {
+        return DeleteAction::make()
+            ->label('刪除')
+            ->modalHeading(fn (EmailCampaign $record): string => "刪除 {$record->name}")
+            ->modalDescription('刪除後將無法復原，且會一併刪除收件人、寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
     }
 
     public static function getRelations(): array

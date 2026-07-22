@@ -2,7 +2,6 @@
 
 namespace Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\Pages;
 
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Lalalili\EmailCampaign\Actions\SyncAudienceListToCampaignRecipientsAction;
 use Lalalili\EmailCampaign\Enums\EmailCampaignStatus;
@@ -18,7 +17,7 @@ class EditEmailCampaign extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [DeleteAction::make()->label('刪除')];
+        return [EmailCampaignResource::deleteAction()];
     }
 
     protected function afterSave(): void

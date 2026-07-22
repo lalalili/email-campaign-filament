@@ -14,6 +14,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Lalalili\EmailCampaign\Models\EmailCampaignRecipient;
 
 class RecipientsRelationManager extends RelationManager
 {
@@ -83,10 +84,26 @@ class RecipientsRelationManager extends RelationManager
             ->actions([
                 ActionGroup::make([
                     EditAction::make()->label('編輯'),
-                    DeleteAction::make()->label('刪除'),
+                    self::deleteAction(),
                 ]),
             ])
-            ->bulkActions([DeleteBulkAction::make()->label('批次刪除')]);
+            ->bulkActions([self::deleteBulkAction()]);
+    }
+
+    public static function deleteAction(): DeleteAction
+    {
+        return DeleteAction::make()
+            ->label('刪除')
+            ->modalHeading(fn (EmailCampaignRecipient $record): string => "刪除 {$record->email}")
+            ->modalDescription('刪除後將無法復原，且會一併刪除對應的寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
+    }
+
+    public static function deleteBulkAction(): DeleteBulkAction
+    {
+        return DeleteBulkAction::make()
+            ->label('批次刪除')
+            ->modalHeading(fn (DeleteBulkAction $action): string => '刪除已選取的 '.$action->getSelectedRecords()->count().' 筆收件人')
+            ->modalDescription('刪除後將無法復原，且會一併刪除對應的寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
     }
 
     /**

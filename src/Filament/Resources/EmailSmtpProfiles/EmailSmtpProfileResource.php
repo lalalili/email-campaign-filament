@@ -129,9 +129,17 @@ class EmailSmtpProfileResource extends Resource
             ->actions([
                 ActionGroup::make([
                     EditAction::make()->label('編輯'),
-                    DeleteAction::make()->label('刪除'),
+                    self::deleteAction(),
                 ]),
             ]);
+    }
+
+    public static function deleteAction(): DeleteAction
+    {
+        return DeleteAction::make()
+            ->label('刪除')
+            ->modalHeading(fn (EmailSmtpProfile $record): string => "刪除 {$record->name}")
+            ->modalDescription('刪除後將無法復原，既有 Email 活動會保留，但會解除 SMTP 設定檔關聯，確定要進行嗎?');
     }
 
     public static function getPages(): array
