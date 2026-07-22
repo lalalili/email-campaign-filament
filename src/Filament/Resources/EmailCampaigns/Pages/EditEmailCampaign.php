@@ -17,7 +17,11 @@ class EditEmailCampaign extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [EmailCampaignResource::deleteAction()];
+        return [
+            EmailCampaignResource::deleteAction(),
+            EmailCampaignResource::forceDeleteAction(),
+            EmailCampaignResource::restoreAction(),
+        ];
     }
 
     protected function afterSave(): void

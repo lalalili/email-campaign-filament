@@ -10,24 +10,28 @@ use Lalalili\EmailCampaignFilament\Filament\Resources\EmailCampaigns\RelationMan
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailSmtpProfiles\EmailSmtpProfileResource;
 use Livewire\Component;
 
-it('describes the permanent impact of deleting an email campaign', function (): void {
+it('explains that a deleted email campaign can be restored', function (): void {
     $action = EmailCampaignResource::deleteAction()
         ->record(new EmailCampaign(['name' => '七月電子報']));
 
     expect($action->getModalHeading())
         ->toBe('刪除 七月電子報')
         ->and($action->getModalDescription())
-        ->toBe('刪除後將無法復原，且會一併刪除收件人、寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
+        ->toBe('刪除後可從「已刪除」還原，收件人、寄送與事件紀錄都會保留，確定要進行嗎?')
+        ->and(EmailCampaignResource::forceDeleteAction()->record(new EmailCampaign(['name' => '七月電子報']))->getModalDescription())
+        ->toStartWith('永久刪除後將無法復原');
 });
 
-it('describes the relationship impact of deleting an SMTP profile', function (): void {
+it('explains that a deleted SMTP profile can be restored', function (): void {
     $action = EmailSmtpProfileResource::deleteAction()
         ->record(new EmailSmtpProfile(['name' => '主要 SMTP']));
 
     expect($action->getModalHeading())
         ->toBe('刪除 主要 SMTP')
         ->and($action->getModalDescription())
-        ->toBe('刪除後將無法復原，既有 Email 活動會保留，但會解除 SMTP 設定檔關聯，確定要進行嗎?');
+        ->toBe('刪除後可從「已刪除」還原，既有 Email 活動會保留 SMTP 設定檔關聯，確定要進行嗎?')
+        ->and(EmailSmtpProfileResource::forceDeleteAction()->record(new EmailSmtpProfile(['name' => '主要 SMTP']))->getModalDescription())
+        ->toStartWith('永久刪除後將無法復原');
 });
 
 it('describes the permanent impact of deleting an email campaign recipient', function (): void {

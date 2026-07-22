@@ -11,6 +11,10 @@ class EditEmailSmtpProfile extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [EmailSmtpProfileResource::deleteAction()];
+        return [
+            EmailSmtpProfileResource::deleteAction(),
+            EmailSmtpProfileResource::forceDeleteAction(),
+            EmailSmtpProfileResource::restoreAction(),
+        ];
     }
 }

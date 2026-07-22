@@ -6,6 +6,8 @@ use BackedEnum;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Placeholder;
@@ -14,13 +16,17 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Lalalili\AudienceCore\Models\AudienceList;
@@ -267,6 +273,7 @@ class EmailCampaignResource extends Resource
                 SelectFilter::make('status')
                     ->label('狀態')
                     ->options(collect(EmailCampaignStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])),
+                TrashedFilter::make(),
             ])
             ->actions([
                 ActionGroup::make([
@@ -278,6 +285,8 @@ class EmailCampaignResource extends Resource
                     ResetStalledCampaignRecordAction::make(),
 
                     self::deleteAction(),
+                    self::forceDeleteAction(),
+                    self::restoreAction(),
                 ]),
             ])
             ->bulkActions([]);
@@ -288,7 +297,42 @@ class EmailCampaignResource extends Resource
         return DeleteAction::make()
             ->label('刪除')
             ->modalHeading(fn (EmailCampaign $record): string => "刪除 {$record->name}")
-            ->modalDescription('刪除後將無法復原，且會一併刪除收件人、寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
+            ->modalDescription('刪除後可從「已刪除」還原，收件人、寄送與事件紀錄都會保留，確定要進行嗎?')
+            ->before(function (DeleteAction $action, EmailCampaign $record): void {
+                if ($record->canBeDeleted()) {
+                    return;
+                }
+
+                Notification::make()
+                    ->title('無法刪除 Email 活動')
+                    ->body($record->deletionBlockReason())
+                    ->danger()
+                    ->send();
+
+                $action->halt();
+            });
+    }
+
+    public static function forceDeleteAction(): ForceDeleteAction
+    {
+        return ForceDeleteAction::make()
+            ->label('永久刪除')
+            ->modalHeading(fn (EmailCampaign $record): string => "永久刪除 {$record->name}")
+            ->modalDescription('永久刪除後將無法復原，且會一併刪除收件人、寄送與事件紀錄；封鎖紀錄會保留，但會解除來源寄送關聯，確定要進行嗎?');
+    }
+
+    public static function restoreAction(): RestoreAction
+    {
+        return RestoreAction::make()
+            ->label('還原')
+            ->modalHeading(fn (EmailCampaign $record): string => "還原 {$record->name}")
+            ->modalDescription('還原後，Email 活動會重新顯示於活動清單。');
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return parent::getRecordRouteBindingEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function getRelations(): array

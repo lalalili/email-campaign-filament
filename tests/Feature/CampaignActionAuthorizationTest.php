@@ -64,3 +64,15 @@ it('hides the reset_stalled action for stalled campaigns when the user cannot up
 
     expect($page->getAction('reset_stalled')->isHidden())->toBeTrue();
 });
+
+it('cancels a scheduled campaign back to draft and clears the schedule', function (): void {
+    $campaign = makeAuthTestCampaign(EmailCampaignStatus::Scheduled);
+    $campaign->update(['scheduled_at' => now()->addHour()]);
+    $page = mountViewCampaignPage($campaign);
+
+    $page->mountAction('cancel_schedule');
+    $page->callMountedAction();
+
+    expect($campaign->fresh()->status)->toBe(EmailCampaignStatus::Draft)
+        ->and($campaign->fresh()->scheduled_at)->toBeNull();
+});

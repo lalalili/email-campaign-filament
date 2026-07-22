@@ -109,6 +109,31 @@ class ViewEmailCampaign extends ViewRecord
 
                     app(SyncAudienceListToCampaignRecipientsAction::class)->execute($this->record);
                 }),
+
+            Action::make('cancel_schedule')
+                ->label('取消排程')
+                ->icon('heroicon-o-x-circle')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('取消 Email 活動排程')
+                ->modalDescription('取消後活動會回到草稿狀態，並清除原排程時間。')
+                ->authorize(fn (): bool => auth()->user()?->can('update', $this->record) ?? false)
+                ->visible(fn (): bool => $this->record->status === EmailCampaignStatus::Scheduled)
+                ->action(function (): void {
+                    $this->record->update([
+                        'status' => EmailCampaignStatus::Draft,
+                        'scheduled_at' => null,
+                    ]);
+
+                    Notification::make()
+                        ->title('排程已取消')
+                        ->success()
+                        ->send();
+                }),
+
+            EmailCampaignResource::deleteAction(),
+            EmailCampaignResource::forceDeleteAction(),
+            EmailCampaignResource::restoreAction(),
         ];
     }
 

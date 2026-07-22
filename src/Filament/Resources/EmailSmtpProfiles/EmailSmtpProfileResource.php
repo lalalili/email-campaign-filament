@@ -6,14 +6,20 @@ use BackedEnum;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Lalalili\EmailCampaign\Models\EmailSmtpProfile;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailSmtpProfiles\Pages\CreateEmailSmtpProfile;
 use Lalalili\EmailCampaignFilament\Filament\Resources\EmailSmtpProfiles\Pages\EditEmailSmtpProfile;
@@ -126,10 +132,15 @@ class EmailSmtpProfileResource extends Resource
                 IconColumn::make('is_default')->label('預設')->boolean(),
             ])
             ->recordUrl(null)
+            ->filters([
+                TrashedFilter::make(),
+            ])
             ->actions([
                 ActionGroup::make([
                     EditAction::make()->label('編輯'),
                     self::deleteAction(),
+                    self::forceDeleteAction(),
+                    self::restoreAction(),
                 ]),
             ]);
     }
@@ -139,7 +150,42 @@ class EmailSmtpProfileResource extends Resource
         return DeleteAction::make()
             ->label('刪除')
             ->modalHeading(fn (EmailSmtpProfile $record): string => "刪除 {$record->name}")
-            ->modalDescription('刪除後將無法復原，既有 Email 活動會保留，但會解除 SMTP 設定檔關聯，確定要進行嗎?');
+            ->modalDescription('刪除後可從「已刪除」還原，既有 Email 活動會保留 SMTP 設定檔關聯，確定要進行嗎?')
+            ->before(function (DeleteAction $action, EmailSmtpProfile $record): void {
+                if ($record->canBeDeleted()) {
+                    return;
+                }
+
+                Notification::make()
+                    ->title('無法刪除 SMTP 設定檔')
+                    ->body($record->deletionBlockReason())
+                    ->danger()
+                    ->send();
+
+                $action->halt();
+            });
+    }
+
+    public static function forceDeleteAction(): ForceDeleteAction
+    {
+        return ForceDeleteAction::make()
+            ->label('永久刪除')
+            ->modalHeading(fn (EmailSmtpProfile $record): string => "永久刪除 {$record->name}")
+            ->modalDescription('永久刪除後將無法復原，既有 Email 活動會保留，但會解除 SMTP 設定檔關聯，確定要進行嗎?');
+    }
+
+    public static function restoreAction(): RestoreAction
+    {
+        return RestoreAction::make()
+            ->label('還原')
+            ->modalHeading(fn (EmailSmtpProfile $record): string => "還原 {$record->name}")
+            ->modalDescription('還原後，SMTP 設定檔會重新顯示於設定檔清單。');
+    }
+
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return parent::getRecordRouteBindingEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function getPages(): array
