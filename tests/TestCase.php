@@ -38,6 +38,6 @@ abstract class TestCase extends PackageTestCase
             $table->timestamps();
         });
 
-        $this->loadMigrationsFrom(__DIR__.'/../../audience-core/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../vendor/lalalili/audience-core/database/migrations');
     }
 }
