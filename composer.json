@@ -5,9 +5,9 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "lalalili/audience-core": "^0.1.1",
-        "lalalili/email-campaign": "^0.1.1",
-        "lalalili/survey-core": "^0.1.1",
+        "lalalili/audience-core": "^1.0",
+        "lalalili/email-campaign": "^1.0",
+        "lalalili/survey-core": "^1.0",
         "filament/filament": "^4.0|^5.0",
         "filament/forms": "^4.0|^5.0",
         "filament/schemas": "^4.0|^5.0",
@@ -23,7 +23,7 @@
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.0",
         "phpstan/phpstan": "~2.2.0",
-        "lalalili/package-testing-support": "*"
+        "lalalili/package-testing-support": "^1.0"
     },
     "repositories": [
         {
@@ -60,7 +60,7 @@
             ]
         },
         "branch-alias": {
-            "dev-main": "0.2.x-dev"
+            "dev-main": "1.0.x-dev"
         }
     },
     "config": {
