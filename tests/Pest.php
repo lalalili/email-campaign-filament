@@ -17,3 +17,5 @@ uses(TestCase::class)
         ),
         $filamentTestFiles,
     )));
+
+pest()->tia()->locally();
