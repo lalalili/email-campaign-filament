@@ -50,7 +50,7 @@ it('computes delivery statistics with the correct success rate', function (): vo
     seedDelivery($campaign, EmailDeliveryStatus::Failed);
     seedDelivery($campaign, EmailDeliveryStatus::Skipped);
 
-    $page = new ViewEmailCampaign;
+    $page = new ViewEmailCampaign();
     $page->bootedInteractsWithActions();
     $page->mount($campaign->id);
 
@@ -72,7 +72,7 @@ it('reports a zero success rate when there are no recipients', function (): void
         'status' => EmailCampaignStatus::Draft,
     ]);
 
-    $page = new ViewEmailCampaign;
+    $page = new ViewEmailCampaign();
     $page->bootedInteractsWithActions();
     $page->mount($campaign->id);
 

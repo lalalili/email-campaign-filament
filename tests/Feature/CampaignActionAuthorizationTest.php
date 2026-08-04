@@ -23,7 +23,7 @@ function makeAuthTestCampaign(EmailCampaignStatus $status = EmailCampaignStatus:
  */
 function mountViewCampaignPage(EmailCampaign $campaign): ViewEmailCampaign
 {
-    $page = new ViewEmailCampaign;
+    $page = new ViewEmailCampaign();
     $page->bootedInteractsWithActions();
     $page->mount($campaign->id);
 

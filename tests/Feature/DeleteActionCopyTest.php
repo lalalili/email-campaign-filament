@@ -53,7 +53,7 @@ it('shows the selected recipient count in the actual bulk delete action', functi
     ]);
     $livewire = Mockery::mock(Component::class)->makePartial();
     $livewire->shouldReceive('getSelectedTableRecords')->andReturn($recipients);
-    $relationManager = new RecipientsRelationManager;
+    $relationManager = new RecipientsRelationManager();
     $action = $relationManager
         ->table(Table::make($relationManager))
         ->getBulkAction('delete')
